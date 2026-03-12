@@ -1,6 +1,6 @@
 # vecgrep.nvim
 
-Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic grep that searches your codebase by meaning using local embeddings.
+Neovim plugin for [vecgrep](https://github.com/martintrojer/vecgrep) — semantic grep that searches your codebase by meaning using local embeddings.
 
 ## Features
 
@@ -12,7 +12,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 ## Requirements
 
-- [vecgrep](https://github.com/mtrojer/vecgrep) binary on `$PATH` (with `--serve` support)
+- [vecgrep](https://github.com/martintrojer/vecgrep) binary on `$PATH` (with `--serve` support)
 - Neovim >= 0.10
 - [snacks.nvim](https://github.com/folke/snacks.nvim) (optional, but needed for live mode and enhanced static mode)
 
