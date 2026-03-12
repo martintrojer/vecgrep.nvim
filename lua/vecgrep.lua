@@ -9,6 +9,13 @@ local M = {}
 function M.setup(opts)
 	config.options = vim.tbl_deep_extend("force", config.defaults, opts or {})
 
+	-- Stop vecgrep server when Neovim exits
+	vim.api.nvim_create_autocmd("VimLeavePre", {
+		callback = function()
+			runner.stop_server()
+		end,
+	})
+
 	vim.api.nvim_create_user_command("Vecgrep", function(cmd)
 		M.search(cmd.args)
 	end, { nargs = 1, desc = "Semantic search with vecgrep" })
@@ -67,6 +74,11 @@ function M.stats()
 			vim.notify("vecgrep: stats failed\n" .. stderr, vim.log.levels.ERROR)
 		end
 	end)
+end
+
+--- Stop the vecgrep server if running.
+function M.stop_server()
+	runner.stop_server()
 end
 
 --- Delete the cached index.

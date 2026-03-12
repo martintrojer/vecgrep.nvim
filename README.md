@@ -4,16 +4,17 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 ## Features
 
-- **Static search** — run a query, browse results in Telescope (or `vim.ui.select`)
-- **Live search** — interactive Telescope picker that re-runs semantic search on each keystroke (debounced)
-- **Preview** — file preview with the matched chunk region highlighted
+- **Static search** — run a query, browse results in fzf-lua (or `vim.ui.select`)
+- **Live search** — interactive fzf-lua picker backed by a warm vecgrep server (model loaded once, instant queries)
+- **Preview** — file preview with syntax highlighting and matched chunk region highlighted
+- **Score coloring** — green (high), yellow (medium), red (low) similarity scores
 - **Index management** — reindex, stats, and cache clearing from within Neovim
 
 ## Requirements
 
-- [vecgrep](https://github.com/mtrojer/vecgrep) binary on `$PATH`
+- [vecgrep](https://github.com/mtrojer/vecgrep) binary on `$PATH` (with `--serve` support)
 - Neovim >= 0.10
-- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (optional, but needed for live mode)
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua) (optional, but needed for live mode and enhanced static mode)
 
 ## Installation
 
@@ -22,7 +23,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 ```lua
 {
   "martintrojer/vecgrep.nvim",
-  dependencies = { "nvim-telescope/telescope.nvim" },
+  dependencies = { "ibhagwan/fzf-lua" },
   opts = {},
 }
 ```
@@ -32,7 +33,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 ```lua
 use {
   "martintrojer/vecgrep.nvim",
-  requires = { "nvim-telescope/telescope.nvim" },
+  requires = { "ibhagwan/fzf-lua" },
   config = function()
     require("vecgrep").setup()
   end,
@@ -60,17 +61,14 @@ require("vecgrep").setup({
 | Command | Description |
 |---|---|
 | `:Vecgrep <query>` | Semantic search for `<query>` |
-| `:VecgrepLive` | Live interactive semantic search |
+| `:VecgrepLive` | Live interactive semantic search (starts server on first use) |
 | `:VecgrepReindex [path]` | Force full re-index |
 | `:VecgrepStats` | Show index statistics |
 | `:VecgrepClearCache` | Delete cached index |
 
-### Telescope extension
+### How live mode works
 
-```vim
-:Telescope vecgrep search query=error handling
-:Telescope vecgrep live
-```
+`:VecgrepLive` starts a `vecgrep --serve` HTTP server in the background on first invocation. The server loads the embedding model and index once, then stays warm for the session. Each keystroke triggers a `curl` request to the server — just embedding + search, no model loading overhead. The server is stopped automatically when Neovim exits.
 
 ### Lua API
 
@@ -80,6 +78,7 @@ require("vecgrep").live()
 require("vecgrep").reindex("./src")
 require("vecgrep").stats()
 require("vecgrep").clear_cache()
+require("vecgrep").stop_server()  -- manually stop the background server
 ```
 
 ### Keymaps
@@ -96,13 +95,14 @@ end, { desc = "Vecgrep live" })
 
 ## Picker Keybindings
 
-In the Telescope picker:
+In the fzf-lua picker:
 
 | Key | Action |
 |---|---|
 | `<CR>` | Open file at match line |
 | `<C-v>` | Open in vertical split |
-| `<C-x>` | Open in horizontal split |
+| `<C-s>` | Open in horizontal split |
+| `<C-t>` | Open in new tab |
 
 ## License
 
