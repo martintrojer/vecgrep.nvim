@@ -5,6 +5,7 @@ local M = {}
 -- Server state
 M._server_proc = nil
 M._server_port = nil
+M._server_path = nil
 
 --- URL-encode a string for use in query parameters.
 ---@param str string
@@ -13,6 +14,16 @@ local function url_encode(str)
 	return str:gsub("([^%w%-%.%_%~])", function(c)
 		return string.format("%%%02X", string.byte(c))
 	end)
+end
+
+--- Get the directory of the current buffer (falls back to cwd).
+---@return string
+local function buf_dir()
+	local bufname = vim.api.nvim_buf_get_name(0)
+	if bufname ~= "" then
+		return vim.fn.fnamemodify(bufname, ":p:h")
+	end
+	return vim.fn.getcwd()
 end
 
 --- Parse JSONL output into a list of result tables.
@@ -31,7 +42,7 @@ end
 
 --- Build the vecgrep command arguments for a search query.
 ---@param query string
----@param opts? table overrides for top_k, threshold, context, paths, args
+---@param opts? table overrides for top_k, threshold, context, args
 ---@return string[] cmd full command with arguments
 local function build_search_cmd(query, opts)
 	opts = opts or {}
@@ -55,18 +66,14 @@ local function build_search_cmd(query, opts)
 	table.insert(cmd, "-C")
 	table.insert(cmd, tostring(opts.context or cfg.context))
 	table.insert(cmd, query)
-
-	local paths = opts.paths or cfg.paths
-	for _, p in ipairs(paths) do
-		table.insert(cmd, p)
-	end
+	table.insert(cmd, buf_dir())
 
 	return cmd
 end
 
 --- Run a semantic search asynchronously.
 ---@param query string the search query
----@param opts? table overrides (top_k, threshold, context, paths, args)
+---@param opts? table overrides (top_k, threshold, context, args)
 ---@param callback fun(results: table[]) called with parsed results
 ---@return vim.SystemObj|nil handle the system process handle (for cancellation)
 function M.search(query, opts, callback)
@@ -89,9 +96,10 @@ function M.search(query, opts, callback)
 end
 
 --- Start the vecgrep HTTP server (loads model + index once).
----@param opts? table overrides (paths, args)
+---@param path string directory to serve
+---@param opts? table overrides (args)
 ---@param callback fun(port: integer) called when the server is ready
-function M.start_server(opts, callback)
+function M.start_server(path, opts, callback)
 	opts = opts or {}
 	local cfg = config.options
 	local cmd = { cfg.cmd, "--serve" }
@@ -109,13 +117,12 @@ function M.start_server(opts, callback)
 		table.insert(cmd, tostring(port))
 	end
 
-	for _, p in ipairs(opts.paths or cfg.paths) do
-		table.insert(cmd, p)
-	end
+	table.insert(cmd, path)
 
 	local stderr_buf = ""
 	local port_found = false
 
+	M._server_path = path
 	M._server_proc = vim.system(cmd, {
 		text = true,
 		stderr = function(_, data)
@@ -137,6 +144,7 @@ function M.start_server(opts, callback)
 		-- Server process exited
 		M._server_proc = nil
 		M._server_port = nil
+		M._server_path = nil
 		if result.code ~= 0 then
 			vim.schedule(function()
 				vim.notify("vecgrep: server exited (code " .. result.code .. ")", vim.log.levels.WARN)
@@ -151,18 +159,24 @@ function M.stop_server()
 		M._server_proc:kill()
 		M._server_proc = nil
 		M._server_port = nil
+		M._server_path = nil
 	end
 end
 
---- Ensure the server is running, starting it if needed.
----@param opts? table overrides (paths, args)
+--- Ensure the server is running for the current buffer's directory.
+--- Restarts if the buffer dir has changed.
+---@param opts? table overrides (args)
 ---@param callback fun(port: integer) called when the server is ready
 function M.ensure_server(opts, callback)
-	if M._server_port and M._server_proc then
+	local path = buf_dir()
+	if M._server_port and M._server_proc and M._server_path == path then
 		callback(M._server_port)
 		return
 	end
-	M.start_server(opts, callback)
+	if M._server_proc then
+		M.stop_server()
+	end
+	M.start_server(path, opts, callback)
 end
 
 --- Build curl args table for querying the running server.

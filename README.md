@@ -37,10 +37,11 @@ require("vecgrep").setup({
   top_k = 20,             -- number of results (-k)
   threshold = 0.3,        -- minimum similarity (--threshold)
   context = 3,            -- context lines (-C)
-  paths = { "." },        -- default search paths
   debounce_ms = 300,      -- debounce for live mode (ms)
 })
 ```
+
+The search path is derived automatically from the current buffer's directory. vecgrep finds its own project root from there.
 
 ## Usage
 

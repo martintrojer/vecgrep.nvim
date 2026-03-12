@@ -52,10 +52,11 @@ function M.live(opts)
 end
 
 --- Force a full re-index.
----@param path? string path to re-index (defaults to ".")
+---@param path? string path to re-index (defaults to current buffer's directory)
 function M.reindex(path)
-	local args = { "--reindex", path or "." }
-	vim.notify("vecgrep: reindexing " .. (path or ".") .. " ...", vim.log.levels.INFO)
+	path = path or vim.fn.expand("%:p:h")
+	local args = { "--reindex", path }
+	vim.notify("vecgrep: reindexing " .. path .. " ...", vim.log.levels.INFO)
 	runner.run_command(args, function(stdout, stderr, code)
 		if code == 0 then
 			vim.notify("vecgrep: reindex complete\n" .. stdout, vim.log.levels.INFO)

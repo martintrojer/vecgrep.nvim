@@ -29,7 +29,7 @@ lua/
 
 | Module | Role |
 |---|---|
-| `config.lua` | Holds `defaults` and `options` tables (cmd, args, top_k, threshold, context, paths, debounce_ms) |
+| `config.lua` | Holds `defaults` and `options` tables (cmd, args, top_k, threshold, context, debounce_ms) |
 | `runner.lua` | `search(query, opts, callback)` — one-shot async search. `start_server/stop_server/ensure_server` — server lifecycle. `build_curl_args(query, opts)` — curl args for snacks.picker proc source. `run_command(args, callback)` — arbitrary vecgrep commands |
 | `picker.lua` | `search(query)` — static snacks.picker with vim.ui.select fallback. `live()` — snacks.picker with proc source backed by the vecgrep HTTP server |
 | `vecgrep.lua` | `setup(opts)` merges config, registers user commands + VimLeavePre cleanup. Convenience wrappers for search/live/reindex/stats/clear_cache/stop_server |
@@ -64,10 +64,11 @@ lua/
   top_k = 20,             -- number of results (-k)
   threshold = 0.3,        -- minimum similarity (--threshold)
   context = 3,            -- context lines (-C)
-  paths = { "." },        -- search paths
   debounce_ms = 300,      -- debounce for live mode
 }
 ```
+
+Search path is derived automatically from the current buffer's directory. vecgrep finds its own project root from there.
 
 ## Dependencies
 
