@@ -88,8 +88,9 @@ function M.search(query, opts, callback)
 	end
 
 	local cmd = build_search_cmd(query, opts)
+	local cwd = M.buf_dir()
 
-	return vim.system(cmd, { text = true, cwd = M.buf_dir() }, function(result)
+	return vim.system(cmd, { text = true, cwd = cwd }, function(result)
 		local results = {}
 		local root = nil
 		if result.code == 0 and result.stdout and result.stdout ~= "" then

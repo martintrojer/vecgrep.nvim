@@ -62,44 +62,13 @@ local function format_item(item, picker)
 end
 
 --- Preview function: file preview with chunk region highlighted.
---- Falls back to showing the raw item data if the file is not found.
 ---@param ctx snacks.picker.preview.ctx
 local function preview_item(ctx)
-	local item = ctx.item
-
-	-- Resolve the file path to check if it exists
-	local file = item.file or ""
-	if file ~= "" and not vim.uv.fs_stat(file) then
-		local cwd = item.cwd or ctx.picker.opts.cwd
-		if cwd then
-			local resolved = cwd .. "/" .. file
-			if not vim.uv.fs_stat(resolved) then
-				file = nil
-			end
-		else
-			file = nil
-		end
-	end
-
-	if not file or file == "" then
-		-- File not found — show raw item data for debugging
-		ctx.preview:reset()
-		ctx.preview:set_lines({
-			"File not found!",
-			"",
-			"root:       " .. (item.cwd or "nil"),
-			"file:       " .. (item.file or "nil"),
-			"score:      " .. tostring(item.vecgrep_score or "nil"),
-			"start_line: " .. tostring(item.start_line or "nil"),
-			"end_line:   " .. tostring(item.end_line or "nil"),
-		})
-		return
-	end
-
 	-- Use the built-in file previewer for file loading + syntax
 	Snacks.picker.preview.file(ctx)
 
 	-- Add Search highlights for the matched chunk region
+	local item = ctx.item
 	local start_line = item.start_line
 	local end_line = item.end_line
 	if ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf) and start_line and end_line then
@@ -153,10 +122,12 @@ function M.search(query, opts)
 		end
 
 		local items = {}
+		local item_cwd = root or fallback_cwd
 		for i, r in ipairs(results) do
 			table.insert(items, {
 				text = string.format("[%.3f] %s:%d-%d", r.score, r.file, r.start_line, r.end_line),
 				file = r.file,
+				cwd = item_cwd,
 				pos = { r.start_line, 0 },
 				start_line = r.start_line,
 				end_line = r.end_line,
