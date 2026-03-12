@@ -15,6 +15,7 @@ lua/
     config.lua                         -- Default config + merged options
     runner.lua                         -- CLI wrapper, server lifecycle, curl cmd builder
     picker.lua                         -- snacks.picker pickers (static + live) and vim.ui.select fallback
+    log.lua                            -- Debug logging (conditional on config.debug)
 ```
 
 ## Architecture
@@ -65,6 +66,7 @@ lua/
   threshold = 0.3,        -- minimum similarity (--threshold)
   context = 3,            -- context lines (-C)
   debounce_ms = 300,      -- debounce for live mode
+  debug = false,          -- write debug log to stdpath("data")/vecgrep.log
 }
 ```
 

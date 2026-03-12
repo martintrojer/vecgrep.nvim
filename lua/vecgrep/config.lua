@@ -7,6 +7,7 @@ M.defaults = {
 	threshold = 0.3,
 	context = 3,
 	debounce_ms = 300,
+	debug = false,
 }
 
 M.options = M.defaults

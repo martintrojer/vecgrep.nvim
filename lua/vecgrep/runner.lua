@@ -1,4 +1,5 @@
 local config = require("vecgrep.config")
+local log = require("vecgrep.log").log
 
 local M = {}
 
@@ -89,6 +90,8 @@ function M.search(query, opts, callback)
 
 	local cmd = build_search_cmd(query, opts)
 	local cwd = M.buf_dir()
+	log("search: cmd =", table.concat(cmd, " "))
+	log("search: cwd =", cwd)
 
 	return vim.system(cmd, { text = true, cwd = cwd }, function(result)
 		local results = {}
@@ -96,6 +99,7 @@ function M.search(query, opts, callback)
 		if result.code == 0 and result.stdout and result.stdout ~= "" then
 			results, root = parse_jsonl(result.stdout)
 		end
+		log("search: code =", result.code, "results =", #results, "root =", tostring(root))
 		vim.schedule(function()
 			callback(results, root)
 		end)
@@ -129,6 +133,8 @@ function M.start_server(path, opts, callback)
 	local stderr_buf = ""
 	local port_found = false
 
+	log("start_server: cmd =", table.concat(cmd, " "))
+	log("start_server: path =", path)
 	M._server_path = path
 	M._server_proc = vim.system(cmd, {
 		text = true,
@@ -142,6 +148,7 @@ function M.start_server(path, opts, callback)
 				if found_port then
 					port_found = true
 					M._server_port = tonumber(found_port)
+					log("start_server: port =", M._server_port)
 					vim.schedule(function()
 						callback(M._server_port)
 					end)
@@ -149,10 +156,7 @@ function M.start_server(path, opts, callback)
 			end
 		end,
 	}, function(result)
-		-- Server process exited
-		M._server_proc = nil
-		M._server_port = nil
-		M._server_path = nil
+		-- Only clear state if this process is still the current server
 		if result.code ~= 0 then
 			vim.schedule(function()
 				vim.notify("vecgrep: server exited (code " .. result.code .. ")", vim.log.levels.WARN)
@@ -164,6 +168,7 @@ end
 --- Stop the vecgrep server if running.
 function M.stop_server()
 	if M._server_proc then
+		log("stop_server: killing server for path =", tostring(M._server_path))
 		M._server_proc:kill()
 		M._server_proc = nil
 		M._server_port = nil
@@ -177,11 +182,14 @@ end
 ---@param callback fun(port: integer) called when the server is ready
 function M.ensure_server(opts, callback)
 	local path = M.buf_dir()
+	log("ensure_server: buf_dir =", path, "server_path =", tostring(M._server_path), "port =", tostring(M._server_port))
 	if M._server_port and M._server_proc and M._server_path == path then
+		log("ensure_server: reusing existing server")
 		callback(M._server_port)
 		return
 	end
 	if M._server_proc then
+		log("ensure_server: stopping old server (path mismatch)")
 		M.stop_server()
 	end
 	M.start_server(path, opts, callback)
@@ -205,6 +213,7 @@ function M.build_curl_args(query, opts)
 		tostring(threshold),
 		context
 	)
+	log("build_curl_args: url =", url)
 	return { "-s", url }
 end
 

@@ -1,5 +1,6 @@
 local runner = require("vecgrep.runner")
 local config = require("vecgrep.config")
+local log = require("vecgrep.log").log
 
 local M = {}
 
@@ -88,10 +89,12 @@ end
 ---@param item snacks.picker.finder.Item
 ---@return false|nil
 local function transform_jsonl(item)
+	log("transform_jsonl: raw =", item.text)
 	local ok, decoded = pcall(vim.json.decode, item.text)
 	if not ok or not decoded then
 		return false
 	end
+	log("transform_jsonl: file =", decoded.file, "root =", tostring(decoded.root))
 	item.text = string.format("[%.3f] %s:%d-%d", decoded.score, decoded.file, decoded.start_line, decoded.end_line)
 	item.file = decoded.file
 	item.pos = { decoded.start_line, 0 }
@@ -159,8 +162,10 @@ function M.live(opts)
 	end
 
 	local cwd = runner.buf_dir()
+	log("live: buf_dir =", cwd)
 
 	runner.ensure_server(opts, function()
+		log("live: server ready, picker cwd =", cwd)
 		Snacks.picker({
 			title = "Vecgrep Live",
 			live = true,
