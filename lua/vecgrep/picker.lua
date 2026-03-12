@@ -98,6 +98,9 @@ local function transform_jsonl(item)
 	item.start_line = decoded.start_line
 	item.end_line = decoded.end_line
 	item.vecgrep_score = decoded.score
+	if decoded.root then
+		item.cwd = decoded.root
+	end
 end
 
 --- Static search: run query once, show results in snacks.picker (or vim.ui.select).
@@ -106,9 +109,7 @@ end
 function M.search(query, opts)
 	opts = opts or {}
 
-	local cwd = vim.fn.getcwd()
-
-	runner.search(query, opts, function(results)
+	runner.search(query, opts, function(results, root)
 		if #results == 0 then
 			vim.notify("vecgrep: no results", vim.log.levels.INFO)
 			return
@@ -138,7 +139,7 @@ function M.search(query, opts)
 			format = format_item,
 			preview = preview_item,
 			sort = { fields = { "idx" } },
-			cwd = cwd,
+			cwd = root,
 		})
 	end)
 end
@@ -154,13 +155,10 @@ function M.live(opts)
 		return
 	end
 
-	local cwd = vim.fn.getcwd()
-
 	runner.ensure_server(opts, function()
 		Snacks.picker({
 			title = "Vecgrep Live",
 			live = true,
-			cwd = cwd,
 			matcher = { fuzzy = false },
 			sort = { fields = { "idx" } },
 			format = format_item,

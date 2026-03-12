@@ -18,7 +18,7 @@ end
 
 --- Get the directory of the current buffer (falls back to cwd).
 ---@return string
-local function buf_dir()
+function M.buf_dir()
 	local bufname = vim.api.nvim_buf_get_name(0)
 	if bufname ~= "" then
 		return vim.fn.fnamemodify(bufname, ":p:h")
@@ -27,17 +27,23 @@ local function buf_dir()
 end
 
 --- Parse JSONL output into a list of result tables.
+--- Extracts the root field from the first result if present.
 ---@param stdout string raw stdout from vecgrep --json
 ---@return table[] results each with {file, start_line, end_line, score, text}
+---@return string|nil root vecgrep's project root
 local function parse_jsonl(stdout)
 	local results = {}
+	local root = nil
 	for line in stdout:gmatch("[^\r\n]+") do
 		local ok, decoded = pcall(vim.json.decode, line)
 		if ok and decoded then
+			if not root and decoded.root then
+				root = decoded.root
+			end
 			table.insert(results, decoded)
 		end
 	end
-	return results
+	return results, root
 end
 
 --- Build the vecgrep command arguments for a search query.
@@ -66,7 +72,6 @@ local function build_search_cmd(query, opts)
 	table.insert(cmd, "-C")
 	table.insert(cmd, tostring(opts.context or cfg.context))
 	table.insert(cmd, query)
-	table.insert(cmd, buf_dir())
 
 	return cmd
 end
@@ -74,23 +79,24 @@ end
 --- Run a semantic search asynchronously.
 ---@param query string the search query
 ---@param opts? table overrides (top_k, threshold, context, args)
----@param callback fun(results: table[]) called with parsed results
+---@param callback fun(results: table[], root: string|nil) called with parsed results and project root
 ---@return vim.SystemObj|nil handle the system process handle (for cancellation)
 function M.search(query, opts, callback)
 	if not query or query == "" then
-		callback({})
+		callback({}, nil)
 		return nil
 	end
 
 	local cmd = build_search_cmd(query, opts)
 
-	return vim.system(cmd, { text = true }, function(result)
+	return vim.system(cmd, { text = true, cwd = M.buf_dir() }, function(result)
 		local results = {}
+		local root = nil
 		if result.code == 0 and result.stdout and result.stdout ~= "" then
-			results = parse_jsonl(result.stdout)
+			results, root = parse_jsonl(result.stdout)
 		end
 		vim.schedule(function()
-			callback(results)
+			callback(results, root)
 		end)
 	end)
 end
@@ -168,7 +174,7 @@ end
 ---@param opts? table overrides (args)
 ---@param callback fun(port: integer) called when the server is ready
 function M.ensure_server(opts, callback)
-	local path = buf_dir()
+	local path = M.buf_dir()
 	if M._server_port and M._server_proc and M._server_path == path then
 		callback(M._server_port)
 		return
