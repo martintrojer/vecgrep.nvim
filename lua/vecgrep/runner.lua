@@ -170,6 +170,9 @@ end
 ---@param opts? table overrides (top_k, threshold, context)
 ---@return string shell_cmd
 function M.build_curl_cmd(query, opts)
+	if not query or query == "" then
+		return "true"
+	end
 	opts = opts or {}
 	local cfg = config.options
 	local k = opts.top_k or cfg.top_k
