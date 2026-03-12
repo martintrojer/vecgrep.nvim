@@ -1,17 +1,21 @@
 local runner = require("vecgrep.runner")
+local config = require("vecgrep.config")
 
 local M = {}
 
-local has_fzf_lua, _ = pcall(require, "fzf-lua")
+local has_snacks, Snacks = pcall(require, "snacks")
 
-local delimiter = "\x01"
-
---- Open a file at a specific line.
----@param file string
----@param line integer
----@param cmd? string edit command ("edit", "vsplit", "split", "tabedit")
-local function open_file(file, line, cmd)
-	vim.cmd((cmd or "edit") .. " +" .. line .. " " .. vim.fn.fnameescape(file))
+--- Highlight group for a score value (matching vecgrep TUI).
+---@param score number
+---@return string highlight group name
+local function score_hl(score)
+	if score >= 0.7 then
+		return "DiagnosticOk"
+	elseif score >= 0.5 then
+		return "DiagnosticWarn"
+	else
+		return "DiagnosticError"
+	end
 end
 
 --- Format a result for display (used by vim.ui.select fallback).
@@ -19,111 +23,6 @@ end
 ---@return string
 local function format_result(r)
 	return string.format("[%.3f] %s:%d-%d", r.score, r.file, r.start_line, r.end_line)
-end
-
---- Color a score string based on its value (matching vecgrep TUI).
----@param score number
----@param text string
----@return string
-local function color_score(score, text)
-	local ansi_codes = require("fzf-lua").utils.ansi_codes
-	if score >= 0.7 then
-		return ansi_codes.green(text)
-	elseif score >= 0.5 then
-		return ansi_codes.yellow(text)
-	else
-		return ansi_codes.red(text)
-	end
-end
-
---- Build a fzf entry string with embedded structured data.
----@param file string
----@param start_line integer
----@param end_line integer
----@param score number
----@return string
-local function make_entry(file, start_line, end_line, score)
-	local display = color_score(score, string.format("[%.3f]", score))
-		.. " "
-		.. string.format("%s:%d-%d", file, start_line, end_line)
-	return table.concat({
-		file,
-		tostring(start_line),
-		tostring(end_line),
-		tostring(score),
-		display,
-	}, delimiter)
-end
-
---- Parse structured fields from a delimiter-separated entry string.
----@param entry string
----@return string file
----@return integer start_line
----@return integer end_line
-local function parse_entry_fields(entry)
-	local parts = {}
-	for part in entry:gmatch("([^" .. delimiter .. "]+)") do
-		table.insert(parts, part)
-	end
-	return parts[1], tonumber(parts[2]), tonumber(parts[3])
-end
-
---- Create the custom previewer extending buffer_or_file.
----@return table previewer_class
-local function create_previewer()
-	local builtin_previewer = require("fzf-lua.previewer.builtin")
-	local previewer = builtin_previewer.buffer_or_file:extend()
-
-	function previewer:new(o, opts, fzf_win)
-		previewer.super.new(self, o, opts, fzf_win)
-		setmetatable(self, previewer)
-		return self
-	end
-
-	-- luacheck: ignore self
-	function previewer:parse_entry(entry_str)
-		local file, start_line = parse_entry_fields(entry_str)
-		return {
-			path = file,
-			line = start_line or 1,
-			col = 1,
-		}
-	end
-
-	function previewer:populate_preview_buf(entry_str)
-		previewer.super.populate_preview_buf(self, entry_str)
-		local _, start_line, end_line = parse_entry_fields(entry_str)
-		if self.preview_bufnr and vim.api.nvim_buf_is_valid(self.preview_bufnr) and start_line and end_line then
-			for i = start_line, end_line do
-				pcall(vim.api.nvim_buf_add_highlight, self.preview_bufnr, -1, "Search", i - 1, 0, -1)
-			end
-		end
-	end
-
-	return previewer
-end
-
---- Build the actions table for fzf-lua.
----@return table actions
-local function make_actions()
-	return {
-		["default"] = function(selected)
-			local file, start_line = parse_entry_fields(selected[1])
-			open_file(file, start_line)
-		end,
-		["ctrl-v"] = function(selected)
-			local file, start_line = parse_entry_fields(selected[1])
-			open_file(file, start_line, "vsplit")
-		end,
-		["ctrl-s"] = function(selected)
-			local file, start_line = parse_entry_fields(selected[1])
-			open_file(file, start_line, "split")
-		end,
-		["ctrl-t"] = function(selected)
-			local file, start_line = parse_entry_fields(selected[1])
-			open_file(file, start_line, "tabedit")
-		end,
-	}
 end
 
 --- Fallback picker using vim.ui.select.
@@ -134,12 +33,74 @@ local function ui_select(results)
 		format_item = format_result,
 	}, function(choice)
 		if choice then
-			open_file(choice.file, choice.start_line)
+			vim.cmd("edit +" .. choice.start_line .. " " .. vim.fn.fnameescape(choice.file))
 		end
 	end)
 end
 
---- Static search: run query once, show results in fzf-lua (or vim.ui.select).
+--- Format function for snacks.picker items.
+---@param item snacks.picker.Item
+---@param picker snacks.Picker
+---@return snacks.picker.Highlight[]
+local function format_item(item, picker)
+	local ret = {} ---@type snacks.picker.Highlight[]
+	local score_text = string.format("[%.3f] ", item.vecgrep_score or 0)
+	table.insert(ret, { score_text, score_hl(item.vecgrep_score or 0) })
+
+	-- Use snacks filename formatter for the rest
+	local file_parts = Snacks.picker.format.filename(item, picker)
+	for _, part in ipairs(file_parts) do
+		table.insert(ret, part)
+	end
+
+	-- Append line range
+	if item.start_line and item.end_line then
+		table.insert(ret, { string.format(":%d-%d", item.start_line, item.end_line), "Comment" })
+	end
+
+	return ret
+end
+
+--- Preview function: file preview with chunk region highlighted.
+---@param ctx snacks.picker.preview.ctx
+local function preview_item(ctx)
+	-- Use the built-in file previewer for file loading + syntax
+	Snacks.picker.preview.file(ctx)
+
+	-- Add Search highlights for the matched chunk region
+	local item = ctx.item
+	local start_line = item.start_line
+	local end_line = item.end_line
+	if ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf) and start_line and end_line then
+		local ns = vim.api.nvim_create_namespace("vecgrep_preview")
+		for i = start_line, end_line do
+			pcall(vim.api.nvim_buf_set_extmark, ctx.buf, ns, i - 1, 0, {
+				end_row = i - 1,
+				end_col = 0,
+				line_hl_group = "Search",
+			})
+		end
+	end
+end
+
+--- Transform a JSONL item from proc source into a snacks.picker item.
+--- The item arrives with item.text set to the raw JSONL line.
+---@param item snacks.picker.finder.Item
+---@return false|nil
+local function transform_jsonl(item)
+	local ok, decoded = pcall(vim.json.decode, item.text)
+	if not ok or not decoded then
+		return false
+	end
+	item.text = string.format("[%.3f] %s:%d-%d", decoded.score, decoded.file, decoded.start_line, decoded.end_line)
+	item.file = decoded.file
+	item.pos = { decoded.start_line, 0 }
+	item.start_line = decoded.start_line
+	item.end_line = decoded.end_line
+	item.vecgrep_score = decoded.score
+end
+
+--- Static search: run query once, show results in snacks.picker (or vim.ui.select).
 ---@param query string
 ---@param opts? table
 function M.search(query, opts)
@@ -151,68 +112,71 @@ function M.search(query, opts)
 			return
 		end
 
-		if not has_fzf_lua then
+		if not has_snacks then
 			ui_select(results)
 			return
 		end
 
-		local fzf_exec = require("fzf-lua").fzf_exec
+		local items = {}
+		for i, r in ipairs(results) do
+			table.insert(items, {
+				text = string.format("[%.3f] %s:%d-%d", r.score, r.file, r.start_line, r.end_line),
+				file = r.file,
+				pos = { r.start_line, 0 },
+				start_line = r.start_line,
+				end_line = r.end_line,
+				vecgrep_score = r.score,
+				idx = i,
+			})
+		end
 
-		fzf_exec(function(fzf_cb)
-			for _, r in ipairs(results) do
-				fzf_cb(make_entry(r.file, r.start_line, r.end_line, r.score))
-			end
-			fzf_cb()
-		end, {
-			prompt = "Vecgrep> ",
-			previewer = create_previewer(),
-			fzf_opts = {
-				["--delimiter"] = delimiter,
-				["--with-nth"] = "5",
-				["--no-sort"] = "",
-			},
-			actions = make_actions(),
+		Snacks.picker({
+			title = "Vecgrep",
+			items = items,
+			format = format_item,
+			preview = preview_item,
+			sort = { fields = { "idx" } },
 		})
 	end)
 end
 
 --- Live interactive search: queries a warm vecgrep server on each keystroke.
---- Requires fzf-lua.
+--- Requires snacks.nvim.
 ---@param opts? table
 function M.live(opts)
 	opts = opts or {}
 
-	if not has_fzf_lua then
-		vim.notify("vecgrep: live mode requires fzf-lua", vim.log.levels.ERROR)
+	if not has_snacks then
+		vim.notify("vecgrep: live mode requires snacks.nvim", vim.log.levels.ERROR)
 		return
 	end
 
 	runner.ensure_server(opts, function()
-		local fzf_live = require("fzf-lua").fzf_live
-
-		fzf_live(function(query)
-			if not query or query == "" then
-				return "true" -- shell no-op
-			end
-			return runner.build_curl_cmd(query, opts)
-		end, {
-			prompt = "Vecgrep Live> ",
-			previewer = create_previewer(),
-			exec_empty_query = true,
-			fn_transform = function(line)
-				local ok, decoded = pcall(vim.json.decode, line)
-				if ok and decoded then
-					return make_entry(decoded.file, decoded.start_line, decoded.end_line, decoded.score)
+		Snacks.picker({
+			title = "Vecgrep Live",
+			live = true,
+			matcher = { fuzzy = false },
+			sort = { fields = { "idx" } },
+			format = format_item,
+			preview = preview_item,
+			finder = function(_, ctx)
+				local query = ctx.filter.search
+				if not query or query == "" then
+					return function() end
 				end
-				return nil
+
+				local curl_args = runner.build_curl_args(query, opts)
+				return require("snacks.picker.source.proc").proc(
+					ctx:opts({
+						cmd = "curl",
+						args = curl_args,
+						notify = false,
+						transform = transform_jsonl,
+					}),
+					ctx
+				)
 			end,
-			fzf_opts = {
-				["--delimiter"] = delimiter,
-				["--with-nth"] = "5",
-				["--no-sort"] = "",
-				["--disabled"] = "",
-			},
-			actions = make_actions(),
+			throttle = config.options.debounce_ms,
 		})
 	end)
 end

@@ -4,8 +4,8 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 ## Features
 
-- **Static search** — run a query, browse results in fzf-lua (or `vim.ui.select`)
-- **Live search** — interactive fzf-lua picker backed by a warm vecgrep server (model loaded once, instant queries)
+- **Static search** — run a query, browse results in snacks.picker (or `vim.ui.select`)
+- **Live search** — interactive snacks.picker backed by a warm vecgrep server (model loaded once, instant queries)
 - **Preview** — file preview with syntax highlighting and matched chunk region highlighted
 - **Score coloring** — green (high), yellow (medium), red (low) similarity scores
 - **Index management** — reindex, stats, and cache clearing from within Neovim
@@ -14,7 +14,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 - [vecgrep](https://github.com/mtrojer/vecgrep) binary on `$PATH` (with `--serve` support)
 - Neovim >= 0.10
-- [fzf-lua](https://github.com/ibhagwan/fzf-lua) (optional, but needed for live mode and enhanced static mode)
+- [snacks.nvim](https://github.com/folke/snacks.nvim) (optional, but needed for live mode and enhanced static mode)
 
 ## Installation
 
@@ -23,20 +23,8 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 ```lua
 {
   "martintrojer/vecgrep.nvim",
-  dependencies = { "ibhagwan/fzf-lua" },
+  dependencies = { "folke/snacks.nvim" },
   opts = {},
-}
-```
-
-### [packer.nvim](https://github.com/wbthomason/packer.nvim)
-
-```lua
-use {
-  "martintrojer/vecgrep.nvim",
-  requires = { "ibhagwan/fzf-lua" },
-  config = function()
-    require("vecgrep").setup()
-  end,
 }
 ```
 
@@ -68,7 +56,7 @@ require("vecgrep").setup({
 
 ### How live mode works
 
-`:VecgrepLive` starts a `vecgrep --serve` HTTP server in the background on first invocation. The server loads the embedding model and index once, then stays warm for the session. Each keystroke triggers a `curl` request to the server — just embedding + search, no model loading overhead. The server is stopped automatically when Neovim exits.
+`:VecgrepLive` starts a `vecgrep --serve` HTTP server in the background on first invocation. The server loads the embedding model and index once, then stays warm for the session. Each keystroke triggers a query to the server via snacks.picker's proc source — just embedding + search, no model loading overhead. The server is stopped automatically when Neovim exits.
 
 ### Lua API
 
@@ -95,7 +83,7 @@ end, { desc = "Vecgrep live" })
 
 ## Picker Keybindings
 
-In the fzf-lua picker:
+In the snacks.picker:
 
 | Key | Action |
 |---|---|

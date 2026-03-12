@@ -165,27 +165,25 @@ function M.ensure_server(opts, callback)
 	M.start_server(opts, callback)
 end
 
---- Build a curl command string for querying the running server.
+--- Build curl args table for querying the running server.
 ---@param query string the search query
 ---@param opts? table overrides (top_k, threshold, context)
----@return string shell_cmd
-function M.build_curl_cmd(query, opts)
-	if not query or query == "" then
-		return "true"
-	end
+---@return string[] args curl arguments (without the "curl" command itself)
+function M.build_curl_args(query, opts)
 	opts = opts or {}
 	local cfg = config.options
 	local k = opts.top_k or cfg.top_k
 	local threshold = opts.threshold or cfg.threshold
 	local context = opts.context or cfg.context
-	return string.format(
-		"curl -s 'http://127.0.0.1:%d/search?q=%s&k=%d&threshold=%s&context=%d'",
+	local url = string.format(
+		"http://127.0.0.1:%d/search?q=%s&k=%d&threshold=%s&context=%d",
 		M._server_port,
 		url_encode(query),
 		k,
 		tostring(threshold),
 		context
 	)
+	return { "-s", url }
 end
 
 --- Run an arbitrary vecgrep command asynchronously.
