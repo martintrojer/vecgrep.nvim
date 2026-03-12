@@ -106,6 +106,8 @@ end
 function M.search(query, opts)
 	opts = opts or {}
 
+	local cwd = vim.fn.getcwd()
+
 	runner.search(query, opts, function(results)
 		if #results == 0 then
 			vim.notify("vecgrep: no results", vim.log.levels.INFO)
@@ -136,6 +138,7 @@ function M.search(query, opts)
 			format = format_item,
 			preview = preview_item,
 			sort = { fields = { "idx" } },
+			cwd = cwd,
 		})
 	end)
 end
@@ -151,10 +154,13 @@ function M.live(opts)
 		return
 	end
 
+	local cwd = vim.fn.getcwd()
+
 	runner.ensure_server(opts, function()
 		Snacks.picker({
 			title = "Vecgrep Live",
 			live = true,
+			cwd = cwd,
 			matcher = { fuzzy = false },
 			sort = { fields = { "idx" } },
 			format = format_item,
