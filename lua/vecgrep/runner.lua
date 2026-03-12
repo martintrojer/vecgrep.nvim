@@ -132,6 +132,7 @@ function M.start_server(path, opts, callback)
 	M._server_path = path
 	M._server_proc = vim.system(cmd, {
 		text = true,
+		cwd = path,
 		stderr = function(_, data)
 			if data then
 				stderr_buf = stderr_buf .. data
