@@ -21,7 +21,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 ```lua
 {
-  "mtrojer/vecgrep.nvim",
+  "martintrojer/vecgrep.nvim",
   dependencies = { "nvim-telescope/telescope.nvim" },
   opts = {},
 }
@@ -31,7 +31,7 @@ Neovim plugin for [vecgrep](https://github.com/mtrojer/vecgrep) — semantic gre
 
 ```lua
 use {
-  "mtrojer/vecgrep.nvim",
+  "martintrojer/vecgrep.nvim",
   requires = { "nvim-telescope/telescope.nvim" },
   config = function()
     require("vecgrep").setup()
