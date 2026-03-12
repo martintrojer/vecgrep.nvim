@@ -139,6 +139,7 @@ end
 ---@param opts? table
 function M.search(query, opts)
 	opts = opts or {}
+	local fallback_cwd = runner.buf_dir()
 
 	runner.search(query, opts, function(results, root)
 		if #results == 0 then
@@ -170,7 +171,7 @@ function M.search(query, opts)
 			format = format_item,
 			preview = preview_item,
 			sort = { fields = { "idx" } },
-			cwd = root,
+			cwd = root or fallback_cwd,
 		})
 	end)
 end
@@ -186,10 +187,13 @@ function M.live(opts)
 		return
 	end
 
+	local cwd = runner.buf_dir()
+
 	runner.ensure_server(opts, function()
 		Snacks.picker({
 			title = "Vecgrep Live",
 			live = true,
+			cwd = cwd,
 			matcher = { fuzzy = false },
 			sort = { fields = { "idx" } },
 			format = format_item,
