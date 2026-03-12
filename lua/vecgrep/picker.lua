@@ -1,5 +1,4 @@
 local runner = require("vecgrep.runner")
-local config = require("vecgrep.config")
 local log = require("vecgrep.log").log
 
 local M = {}
@@ -191,7 +190,6 @@ function M.live(opts)
 					ctx
 				)
 			end,
-			throttle = config.options.debounce_ms,
 		})
 	end)
 end

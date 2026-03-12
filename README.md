@@ -37,7 +37,6 @@ require("vecgrep").setup({
   top_k = 20,             -- number of results (-k)
   threshold = 0.3,        -- minimum similarity (--threshold)
   context = 3,            -- context lines (-C)
-  debounce_ms = 300,      -- debounce for live mode (ms)
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
 })
 ```
