@@ -175,9 +175,13 @@ function M.live(opts)
 				picker_ref.title = string.format("Vecgrep Live (indexing %d/%s)", status.indexed, total)
 				picker_ref:update_titles()
 			end
-		end, function()
+		end, function(status)
 			if picker_ref then
-				picker_ref.title = "Vecgrep Live"
+				if status.files and status.chunks then
+					picker_ref.title = string.format("Vecgrep Live (%d files, %d chunks)", status.files, status.chunks)
+				else
+					picker_ref.title = "Vecgrep Live"
+				end
 				picker_ref:update_titles()
 			end
 		end)

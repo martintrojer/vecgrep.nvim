@@ -223,7 +223,7 @@ end
 --- Calls progress_cb on each poll, then done_cb when ready.
 ---@param port integer
 ---@param progress_cb? fun(status: table) called with each status response
----@param done_cb fun() called when status is "ready"
+---@param done_cb fun(status: table) called when status is "ready"
 function M.poll_status(port, progress_cb, done_cb)
 	local url = string.format("http://127.0.0.1:%d/status", port)
 	local timer = vim.uv.new_timer()
@@ -246,7 +246,7 @@ function M.poll_status(port, progress_cb, done_cb)
 					if status.status == "ready" then
 						timer:stop()
 						timer:close()
-						done_cb()
+						done_cb(status)
 					end
 				end)
 			end)
