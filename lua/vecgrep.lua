@@ -36,6 +36,10 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("VecgrepClearCache", function()
 		M.clear_cache()
 	end, { desc = "Clear vecgrep index cache" })
+
+	vim.api.nvim_create_user_command("VecgrepStatus", function()
+		M.status()
+	end, { desc = "Show vecgrep server status" })
 end
 
 --- Run a static semantic search and open the picker.
@@ -80,6 +84,38 @@ end
 --- Stop the vecgrep server if running.
 function M.stop_server()
 	runner.stop_server()
+end
+
+--- Show server status (requires running server).
+function M.status()
+	if not runner._server_port then
+		vim.notify("vecgrep: no server running", vim.log.levels.WARN)
+		return
+	end
+	local url = string.format("http://127.0.0.1:%d/status", runner._server_port)
+	vim.system({ "curl", "-s", url }, { text = true }, function(result)
+		vim.schedule(function()
+			if result.code == 0 and result.stdout then
+				local ok, s = pcall(vim.json.decode, result.stdout)
+				if ok then
+					if s.status == "ready" then
+						vim.notify(
+							string.format("vecgrep: ready (%d files, %d chunks)", s.files, s.chunks),
+							vim.log.levels.INFO
+						)
+					else
+						local total = s.total and tostring(s.total) or "??"
+						vim.notify(
+							string.format("vecgrep: indexing %d/%s files, %d chunks", s.indexed, total, s.chunks),
+							vim.log.levels.INFO
+						)
+					end
+				end
+			else
+				vim.notify("vecgrep: server not responding", vim.log.levels.ERROR)
+			end
+		end)
+	end)
 end
 
 --- Delete the cached index.

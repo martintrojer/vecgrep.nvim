@@ -36,7 +36,6 @@ require("vecgrep").setup({
   args = {},              -- extra default CLI args (e.g. {"--hidden"})
   top_k = 20,             -- number of results (-k)
   threshold = 0.3,        -- minimum similarity (--threshold)
-  context = 3,            -- context lines (-C)
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
 })
 ```
@@ -54,6 +53,7 @@ The search path is derived automatically from the current buffer's directory. ve
 | `:VecgrepReindex [path]` | Force full re-index |
 | `:VecgrepStats` | Show index statistics |
 | `:VecgrepClearCache` | Delete cached index |
+| `:VecgrepStatus` | Show server indexing status |
 
 ### How live mode works
 
@@ -67,6 +67,7 @@ require("vecgrep").live()
 require("vecgrep").reindex("./src")
 require("vecgrep").stats()
 require("vecgrep").clear_cache()
+require("vecgrep").status()
 require("vecgrep").stop_server()  -- manually stop the background server
 ```
 

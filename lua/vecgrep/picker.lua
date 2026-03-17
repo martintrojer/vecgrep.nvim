@@ -163,10 +163,25 @@ function M.live(opts)
 	local cwd = runner.buf_dir()
 	log("live: buf_dir =", cwd)
 
-	runner.ensure_server(opts, function()
+	runner.ensure_server(opts, function(port)
 		log("live: server ready, picker cwd =", cwd)
-		Snacks.picker({
-			title = "Vecgrep Live",
+
+		local picker_ref = nil
+
+		-- Poll /status to update picker title with indexing progress
+		runner.poll_status(port, function(status)
+			if picker_ref and status.status == "indexing" then
+				local total = status.total and tostring(status.total) or "??"
+				picker_ref.title = string.format("Vecgrep Live (indexing %d/%s)", status.indexed, total)
+			end
+		end, function()
+			if picker_ref then
+				picker_ref.title = "Vecgrep Live"
+			end
+		end)
+
+		picker_ref = Snacks.picker({
+			title = "Vecgrep Live (indexing...)",
 			live = true,
 			cwd = cwd,
 			matcher = { fuzzy = false },

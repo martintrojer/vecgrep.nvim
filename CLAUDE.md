@@ -30,10 +30,10 @@ lua/
 
 | Module | Role |
 |---|---|
-| `config.lua` | Holds `defaults` and `options` tables (cmd, args, top_k, threshold, context, debug) |
-| `runner.lua` | `search(query, opts, callback)` — one-shot async search. `start_server/stop_server/ensure_server` — server lifecycle. `build_curl_args(query, opts)` — curl args for snacks.picker proc source. `run_command(args, callback)` — arbitrary vecgrep commands |
+| `config.lua` | Holds `defaults` and `options` tables (cmd, args, top_k, threshold, debug, server_port) |
+| `runner.lua` | `search(query, opts, callback)` — one-shot async search. `start_server/stop_server/ensure_server` — server lifecycle. `build_curl_args(query, opts)` — curl args for snacks.picker proc source. `poll_status(port, progress_cb, done_cb)` — poll `/status` endpoint. `run_command(args, callback)` — arbitrary vecgrep commands |
 | `picker.lua` | `search(query)` — static snacks.picker with vim.ui.select fallback. `live()` — snacks.picker with proc source backed by the vecgrep HTTP server |
-| `vecgrep.lua` | `setup(opts)` merges config, registers user commands + VimLeavePre cleanup. Convenience wrappers for search/live/reindex/stats/clear_cache/stop_server |
+| `vecgrep.lua` | `setup(opts)` merges config, registers user commands + VimLeavePre cleanup. Convenience wrappers for search/live/reindex/stats/status/clear_cache/stop_server |
 
 ## Key Design Decisions
 
@@ -55,6 +55,7 @@ lua/
 | `:VecgrepReindex [path]` | Force full re-index |
 | `:VecgrepStats` | Show index statistics |
 | `:VecgrepClearCache` | Delete cached index |
+| `:VecgrepStatus` | Show server indexing status |
 
 ## Configuration Defaults
 
@@ -64,8 +65,8 @@ lua/
   args = {},              -- extra default CLI args
   top_k = 20,             -- number of results (-k)
   threshold = 0.3,        -- minimum similarity (--threshold)
-  context = 3,            -- context lines (-C)
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
+  server_port = nil,      -- fixed port for --serve (nil = auto-detect)
 }
 ```
 

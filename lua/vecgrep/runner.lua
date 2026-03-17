@@ -49,7 +49,7 @@ end
 
 --- Build the vecgrep command arguments for a search query.
 ---@param query string
----@param opts? table overrides for top_k, threshold, context, args
+---@param opts? table overrides for top_k, threshold, args
 ---@return string[] cmd full command with arguments
 local function build_search_cmd(query, opts)
 	opts = opts or {}
@@ -70,8 +70,6 @@ local function build_search_cmd(query, opts)
 	table.insert(cmd, tostring(opts.top_k or cfg.top_k))
 	table.insert(cmd, "--threshold")
 	table.insert(cmd, tostring(opts.threshold or cfg.threshold))
-	table.insert(cmd, "-C")
-	table.insert(cmd, tostring(opts.context or cfg.context))
 	table.insert(cmd, query)
 
 	return cmd
@@ -79,7 +77,7 @@ end
 
 --- Run a semantic search asynchronously.
 ---@param query string the search query
----@param opts? table overrides (top_k, threshold, context, args)
+---@param opts? table overrides (top_k, threshold, args)
 ---@param callback fun(results: table[], root: string|nil) called with parsed results and project root
 ---@return vim.SystemObj|nil handle the system process handle (for cancellation)
 function M.search(query, opts, callback)
@@ -197,24 +195,57 @@ end
 
 --- Build curl args table for querying the running server.
 ---@param query string the search query
----@param opts? table overrides (top_k, threshold, context)
+---@param opts? table overrides (top_k, threshold)
 ---@return string[] args curl arguments (without the "curl" command itself)
 function M.build_curl_args(query, opts)
 	opts = opts or {}
 	local cfg = config.options
 	local k = opts.top_k or cfg.top_k
 	local threshold = opts.threshold or cfg.threshold
-	local context = opts.context or cfg.context
 	local url = string.format(
-		"http://127.0.0.1:%d/search?q=%s&k=%d&threshold=%s&context=%d",
+		"http://127.0.0.1:%d/search?q=%s&k=%d&threshold=%s",
 		M._server_port,
 		url_encode(query),
 		k,
-		tostring(threshold),
-		context
+		tostring(threshold)
 	)
 	log("build_curl_args: url =", url)
 	return { "-s", url }
+end
+
+--- Poll the /status endpoint until the server is ready (or timeout).
+--- Calls progress_cb on each poll, then done_cb when ready.
+---@param port integer
+---@param progress_cb? fun(status: table) called with each status response
+---@param done_cb fun() called when status is "ready"
+function M.poll_status(port, progress_cb, done_cb)
+	local url = string.format("http://127.0.0.1:%d/status", port)
+	local timer = vim.uv.new_timer()
+	timer:start(
+		500,
+		1000,
+		vim.schedule_wrap(function()
+			vim.system({ "curl", "-s", url }, { text = true }, function(result)
+				vim.schedule(function()
+					if result.code ~= 0 or not result.stdout or result.stdout == "" then
+						return
+					end
+					local ok, status = pcall(vim.json.decode, result.stdout)
+					if not ok then
+						return
+					end
+					if progress_cb then
+						progress_cb(status)
+					end
+					if status.status == "ready" then
+						timer:stop()
+						timer:close()
+						done_cb()
+					end
+				end)
+			end)
+		end)
+	)
 end
 
 --- Run an arbitrary vecgrep command asynchronously.
