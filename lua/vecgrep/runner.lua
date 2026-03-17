@@ -170,7 +170,7 @@ function M.start_server(path, opts, callback)
 				stderr_buf = stderr_buf .. data
 			end
 			if not port_found then
-				local found_port = stderr_buf:match(":(%d+)")
+				local found_port = stderr_buf:match("Listening on http[s]?://[^:]+:(%d+)")
 				if found_port then
 					port_found = true
 					M._server_port = tonumber(found_port)
