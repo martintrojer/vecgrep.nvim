@@ -34,8 +34,8 @@ Neovim plugin for [vecgrep](https://github.com/martintrojer/vecgrep) — semanti
 require("vecgrep").setup({
   cmd = "vecgrep",        -- path to vecgrep binary
   args = {},              -- extra default CLI args (e.g. {"--hidden"})
-  top_k = 20,             -- number of results (-k)
-  threshold = 0.3,        -- minimum similarity (--threshold)
+  top_k = nil,             -- number of results (-k), nil uses vecgrep default
+  threshold = nil,         -- minimum similarity (--threshold), nil uses vecgrep default
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
 })
 ```

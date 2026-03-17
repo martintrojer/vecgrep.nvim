@@ -62,8 +62,8 @@ lua/
 {
   cmd = "vecgrep",        -- path to vecgrep binary
   args = {},              -- extra default CLI args
-  top_k = 20,             -- number of results (-k)
-  threshold = 0.3,        -- minimum similarity (--threshold)
+  top_k = nil,             -- number of results (-k), nil uses vecgrep default
+  threshold = nil,         -- minimum similarity (--threshold), nil uses vecgrep default
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
   server_port = nil,      -- fixed port for --serve (nil = auto-detect)
 }

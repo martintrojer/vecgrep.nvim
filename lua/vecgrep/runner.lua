@@ -66,10 +66,16 @@ local function build_search_cmd(query, opts)
 	end
 
 	table.insert(cmd, "--json")
-	table.insert(cmd, "-k")
-	table.insert(cmd, tostring(opts.top_k or cfg.top_k))
-	table.insert(cmd, "--threshold")
-	table.insert(cmd, tostring(opts.threshold or cfg.threshold))
+	local k = opts.top_k or cfg.top_k
+	if k then
+		table.insert(cmd, "-k")
+		table.insert(cmd, tostring(k))
+	end
+	local threshold = opts.threshold or cfg.threshold
+	if threshold then
+		table.insert(cmd, "--threshold")
+		table.insert(cmd, tostring(threshold))
+	end
 	table.insert(cmd, query)
 
 	return cmd
@@ -202,13 +208,13 @@ function M.build_curl_args(query, opts)
 	local cfg = config.options
 	local k = opts.top_k or cfg.top_k
 	local threshold = opts.threshold or cfg.threshold
-	local url = string.format(
-		"http://127.0.0.1:%d/search?q=%s&k=%d&threshold=%s",
-		M._server_port,
-		url_encode(query),
-		k,
-		tostring(threshold)
-	)
+	local url = string.format("http://127.0.0.1:%d/search?q=%s", M._server_port, url_encode(query))
+	if k then
+		url = url .. string.format("&k=%d", k)
+	end
+	if threshold then
+		url = url .. string.format("&threshold=%s", tostring(threshold))
+	end
 	log("build_curl_args: url =", url)
 	return { "-s", url }
 end

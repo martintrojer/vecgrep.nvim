@@ -3,8 +3,8 @@ local M = {}
 M.defaults = {
 	cmd = "vecgrep",
 	args = {},
-	top_k = 20,
-	threshold = 0.3,
+	top_k = nil,
+	threshold = nil,
 	debug = false,
 	server_port = nil,
 }
