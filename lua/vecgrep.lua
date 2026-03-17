@@ -98,15 +98,16 @@ function M.status()
 			if result.code == 0 and result.stdout then
 				local ok, s = pcall(vim.json.decode, result.stdout)
 				if ok then
+					local ver = s.version and (" v" .. s.version) or ""
 					if s.status == "ready" then
 						vim.notify(
-							string.format("vecgrep: ready (%d files, %d chunks)", s.files, s.chunks),
+							string.format("vecgrep%s: ready (%d files, %d chunks)", ver, s.files, s.chunks),
 							vim.log.levels.INFO
 						)
 					else
 						local total = s.total and tostring(s.total) or "??"
 						vim.notify(
-							string.format("vecgrep: indexing %d/%s files, %d chunks", s.indexed, total, s.chunks),
+							string.format("vecgrep%s: indexing %d/%s files, %d chunks", ver, s.indexed, total, s.chunks),
 							vim.log.levels.INFO
 						)
 					end
