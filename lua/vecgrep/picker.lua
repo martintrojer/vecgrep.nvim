@@ -175,8 +175,8 @@ function M.live(opts)
 				picker_ref.title = string.format("Vecgrep Live (indexing %d/%s)", status.indexed, total)
 				picker_ref:update_titles()
 			end
-			if picker_ref and status.scope then
-				picker_ref.opts.cwd = status.scope
+			if picker_ref and status.scope and #status.scope > 0 then
+				picker_ref.opts.cwd = status.scope[1]
 			end
 		end, function(status)
 			if picker_ref then

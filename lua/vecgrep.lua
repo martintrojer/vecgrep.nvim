@@ -98,8 +98,8 @@ function M.stats()
 						if s.root then
 							table.insert(info, "root: " .. s.root)
 						end
-						if s.scope then
-							table.insert(info, "scope: " .. s.scope)
+						if s.scope and #s.scope > 0 then
+							table.insert(info, "scope: " .. table.concat(s.scope, ", "))
 						end
 						if s.status == "ready" then
 							table.insert(info, string.format("status: ready (%d files, %d chunks)", s.files, s.chunks))
