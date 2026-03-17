@@ -173,10 +173,12 @@ function M.live(opts)
 			if picker_ref and status.status == "indexing" then
 				local total = status.total and tostring(status.total) or "??"
 				picker_ref.title = string.format("Vecgrep Live (indexing %d/%s)", status.indexed, total)
+				picker_ref:update_titles()
 			end
 		end, function()
 			if picker_ref then
 				picker_ref.title = "Vecgrep Live"
+				picker_ref:update_titles()
 			end
 		end)
 
