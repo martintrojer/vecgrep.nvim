@@ -51,9 +51,8 @@ The search path is derived automatically from the current buffer's directory. ve
 | `:Vecgrep <query>` | Semantic search for `<query>` |
 | `:VecgrepLive` | Live interactive semantic search (starts server on first use) |
 | `:VecgrepReindex [path]` | Force full re-index |
-| `:VecgrepStats` | Show index statistics |
+| `:VecgrepStats` | Show index statistics (and server status if running) |
 | `:VecgrepClearCache` | Delete cached index |
-| `:VecgrepStatus` | Show server indexing status |
 
 ### How live mode works
 
@@ -67,7 +66,6 @@ require("vecgrep").live()
 require("vecgrep").reindex("./src")
 require("vecgrep").stats()
 require("vecgrep").clear_cache()
-require("vecgrep").status()
 require("vecgrep").stop_server()  -- manually stop the background server
 ```
 

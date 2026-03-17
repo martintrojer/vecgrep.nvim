@@ -33,7 +33,7 @@ lua/
 | `config.lua` | Holds `defaults` and `options` tables (cmd, args, top_k, threshold, debug, server_port) |
 | `runner.lua` | `search(query, opts, callback)` — one-shot async search. `start_server/stop_server/ensure_server` — server lifecycle. `build_curl_args(query, opts)` — curl args for snacks.picker proc source. `poll_status(port, progress_cb, done_cb)` — poll `/status` endpoint. `run_command(args, callback)` — arbitrary vecgrep commands |
 | `picker.lua` | `search(query)` — static snacks.picker with vim.ui.select fallback. `live()` — snacks.picker with proc source backed by the vecgrep HTTP server |
-| `vecgrep.lua` | `setup(opts)` merges config, registers user commands + VimLeavePre cleanup. Convenience wrappers for search/live/reindex/stats/status/clear_cache/stop_server |
+| `vecgrep.lua` | `setup(opts)` merges config, registers user commands + VimLeavePre cleanup. Convenience wrappers for search/live/reindex/stats/clear_cache/stop_server |
 
 ## Key Design Decisions
 
@@ -53,9 +53,8 @@ lua/
 | `:Vecgrep <query>` | Static semantic search |
 | `:VecgrepLive` | Live interactive semantic search |
 | `:VecgrepReindex [path]` | Force full re-index |
-| `:VecgrepStats` | Show index statistics |
+| `:VecgrepStats` | Show index statistics (and server status if running) |
 | `:VecgrepClearCache` | Delete cached index |
-| `:VecgrepStatus` | Show server indexing status |
 
 ## Configuration Defaults
 
