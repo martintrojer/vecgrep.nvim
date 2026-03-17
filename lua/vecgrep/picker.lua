@@ -169,10 +169,18 @@ function M.live(opts)
 		local picker_ref = nil
 
 		-- Poll /status to update picker title with indexing progress
+		local function scope_suffix(status)
+			if status.scope and #status.scope > 0 then
+				return " [" .. table.concat(status.scope, ", ") .. "]"
+			end
+			return ""
+		end
+
 		runner.poll_status(port, function(status)
 			if picker_ref and status.status == "indexing" then
 				local total = status.total and tostring(status.total) or "??"
-				picker_ref.title = string.format("Vecgrep Live (indexing %d/%s)", status.indexed, total)
+				picker_ref.title =
+					string.format("Vecgrep Live (indexing %d/%s)%s", status.indexed, total, scope_suffix(status))
 				picker_ref:update_titles()
 			end
 			if picker_ref and status.scope and #status.scope > 0 then
@@ -181,7 +189,12 @@ function M.live(opts)
 		end, function(status)
 			if picker_ref then
 				if status.files and status.chunks then
-					picker_ref.title = string.format("Vecgrep Live (%d files, %d chunks)", status.files, status.chunks)
+					picker_ref.title = string.format(
+						"Vecgrep Live (%d files, %d chunks)%s",
+						status.files,
+						status.chunks,
+						scope_suffix(status)
+					)
 				else
 					picker_ref.title = "Vecgrep Live"
 				end
