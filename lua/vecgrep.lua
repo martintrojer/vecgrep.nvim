@@ -68,11 +68,12 @@ end
 
 --- Show index statistics, and server status if a server is running.
 function M.stats()
-	runner.run_command({ "--stats" }, function(stdout, stderr, code)
-		if code == 0 then
-			vim.notify("vecgrep stats:\n" .. stdout, vim.log.levels.INFO)
+	runner.run_command({ "--stats" }, function(_, stderr)
+		local output = stderr or ""
+		if output ~= "" then
+			vim.notify("vecgrep stats:\n" .. output, vim.log.levels.INFO)
 		else
-			vim.notify("vecgrep: stats failed\n" .. stderr, vim.log.levels.ERROR)
+			vim.notify("vecgrep: no stats available", vim.log.levels.WARN)
 		end
 	end)
 

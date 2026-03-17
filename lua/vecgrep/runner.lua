@@ -258,7 +258,7 @@ function M.run_command(args, callback)
 		table.insert(cmd, a)
 	end
 
-	vim.system(cmd, { text = true }, function(result)
+	vim.system(cmd, { text = true, cwd = M.buf_dir() }, function(result)
 		vim.schedule(function()
 			callback(result.stdout or "", result.stderr or "", result.code)
 		end)
