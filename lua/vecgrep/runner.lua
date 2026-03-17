@@ -226,6 +226,7 @@ end
 ---@param done_cb fun(status: table) called when status is "ready"
 function M.poll_status(port, progress_cb, done_cb)
 	local url = string.format("http://127.0.0.1:%d/status", port)
+	log("poll_status: url =", url)
 	local timer = vim.uv.new_timer()
 	timer:start(
 		500,
@@ -234,12 +235,16 @@ function M.poll_status(port, progress_cb, done_cb)
 			vim.system({ "curl", "-s", url }, { text = true }, function(result)
 				vim.schedule(function()
 					if result.code ~= 0 or not result.stdout or result.stdout == "" then
+						log("poll_status: curl failed, code =", result.code)
 						return
 					end
+					log("poll_status: response =", result.stdout)
 					local ok, status = pcall(vim.json.decode, result.stdout)
 					if not ok then
+						log("poll_status: json decode failed")
 						return
 					end
+					log("poll_status: status =", status.status)
 					if progress_cb then
 						progress_cb(status)
 					end
