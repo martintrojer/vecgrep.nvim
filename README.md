@@ -36,6 +36,7 @@ require("vecgrep").setup({
   args = {},              -- extra default CLI args (e.g. {"--hidden"})
   top_k = nil,             -- number of results (-k), nil uses vecgrep default
   threshold = nil,         -- minimum similarity (--threshold), nil uses vecgrep default
+  search_from_root = false, -- always search from project root (via vecgrep --show-root)
   debug = false,          -- write debug log to stdpath("data")/vecgrep.log
 })
 ```
@@ -48,8 +49,8 @@ The search path is derived automatically from the current buffer's directory. ve
 
 | Command | Description |
 |---|---|
-| `:Vecgrep <query>` | Semantic search for `<query>` |
-| `:VecgrepLive` | Live interactive semantic search (starts server on first use) |
+| `:Vecgrep[!] <query>` | Semantic search for `<query>` (`!` toggles root search) |
+| `:VecgrepLive[!]` | Live interactive semantic search (`!` toggles root search) |
 | `:VecgrepReindex [path]` | Force full re-index |
 | `:VecgrepStats` | Show index statistics (and server status if running) |
 | `:VecgrepClearCache` | Delete cached index |

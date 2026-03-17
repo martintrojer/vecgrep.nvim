@@ -110,7 +110,7 @@ end
 ---@param opts? table
 function M.search(query, opts)
 	opts = opts or {}
-	local fallback_cwd = runner.buf_dir()
+	local fallback_cwd = runner.search_dir(opts.from_root)
 
 	runner.search(query, opts, function(results, root)
 		if #results == 0 then
@@ -160,8 +160,8 @@ function M.live(opts)
 		return
 	end
 
-	local cwd = runner.buf_dir()
-	log("live: buf_dir =", cwd)
+	local cwd = runner.search_dir(opts.from_root)
+	log("live: search_dir =", cwd)
 
 	runner.ensure_server(opts, function(port)
 		log("live: server ready, picker cwd =", cwd)

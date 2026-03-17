@@ -17,12 +17,20 @@ function M.setup(opts)
 	})
 
 	vim.api.nvim_create_user_command("Vecgrep", function(cmd)
-		M.search(cmd.args)
-	end, { nargs = 1, desc = "Semantic search with vecgrep" })
+		local search_opts = {}
+		if cmd.bang then
+			search_opts.from_root = not config.options.search_from_root
+		end
+		M.search(cmd.args, search_opts)
+	end, { nargs = 1, bang = true, desc = "Semantic search with vecgrep (! toggles root)" })
 
-	vim.api.nvim_create_user_command("VecgrepLive", function()
-		M.live()
-	end, { desc = "Live semantic search with vecgrep" })
+	vim.api.nvim_create_user_command("VecgrepLive", function(cmd)
+		local live_opts = {}
+		if cmd.bang then
+			live_opts.from_root = not config.options.search_from_root
+		end
+		M.live(live_opts)
+	end, { bang = true, desc = "Live semantic search with vecgrep (! toggles root)" })
 
 	vim.api.nvim_create_user_command("VecgrepReindex", function(cmd)
 		local path = cmd.args ~= "" and cmd.args or nil

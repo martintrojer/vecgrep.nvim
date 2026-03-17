@@ -27,6 +27,28 @@ function M.buf_dir()
 	return vim.fn.getcwd()
 end
 
+--- Get the search directory, respecting search_from_root config.
+--- When from_root is true, runs `vecgrep --show-root` to find the project root.
+---@param from_root? boolean override config.search_from_root
+---@return string
+function M.search_dir(from_root)
+	if from_root == nil then
+		from_root = config.options.search_from_root
+	end
+	if not from_root then
+		return M.buf_dir()
+	end
+	local cfg = config.options
+	local result = vim.system({ cfg.cmd, "--show-root" }, { text = true, cwd = M.buf_dir() }):wait()
+	if result.code == 0 and result.stdout and result.stdout ~= "" then
+		local root = vim.trim(result.stdout)
+		log("search_dir: root =", root)
+		return root
+	end
+	log("search_dir: --show-root failed, falling back to buf_dir")
+	return M.buf_dir()
+end
+
 --- Parse JSONL output into a list of result tables.
 --- Extracts the root field from the first result if present.
 ---@param stdout string raw stdout from vecgrep --json
@@ -93,7 +115,7 @@ function M.search(query, opts, callback)
 	end
 
 	local cmd = build_search_cmd(query, opts)
-	local cwd = M.buf_dir()
+	local cwd = M.search_dir(opts.from_root)
 	log("search: cmd =", table.concat(cmd, " "))
 	log("search: cwd =", cwd)
 
@@ -185,8 +207,16 @@ end
 ---@param opts? table overrides (args)
 ---@param callback fun(port: integer) called when the server is ready
 function M.ensure_server(opts, callback)
-	local path = M.buf_dir()
-	log("ensure_server: buf_dir =", path, "server_path =", tostring(M._server_path), "port =", tostring(M._server_port))
+	opts = opts or {}
+	local path = M.search_dir(opts.from_root)
+	log(
+		"ensure_server: search_dir =",
+		path,
+		"server_path =",
+		tostring(M._server_path),
+		"port =",
+		tostring(M._server_port)
+	)
 	if M._server_port and M._server_proc and M._server_path == path then
 		log("ensure_server: reusing existing server")
 		callback(M._server_port)
@@ -269,7 +299,7 @@ function M.run_command(args, callback)
 		table.insert(cmd, a)
 	end
 
-	vim.system(cmd, { text = true, cwd = M.buf_dir() }, function(result)
+	vim.system(cmd, { text = true, cwd = M.search_dir() }, function(result)
 		vim.schedule(function()
 			callback(result.stdout or "", result.stderr or "", result.code)
 		end)

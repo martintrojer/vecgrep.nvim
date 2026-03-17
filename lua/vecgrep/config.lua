@@ -5,6 +5,7 @@ M.defaults = {
 	args = {},
 	top_k = nil,
 	threshold = nil,
+	search_from_root = false,
 	debug = false,
 	server_port = nil,
 }
