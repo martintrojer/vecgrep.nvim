@@ -68,46 +68,63 @@ end
 
 --- Show index statistics, and server status if a server is running.
 function M.stats()
-	runner.run_command({ "--stats" }, function(_, stderr)
-		local output = stderr or ""
-		if output ~= "" then
-			vim.notify("vecgrep stats:\n" .. output, vim.log.levels.INFO)
-		else
-			vim.notify("vecgrep: no stats available", vim.log.levels.WARN)
+	local parts = {}
+	local pending = 1
+
+	local function maybe_notify()
+		pending = pending - 1
+		if pending > 0 then
+			return
 		end
-	end)
+		if #parts == 0 then
+			vim.notify("vecgrep: no stats available", vim.log.levels.WARN)
+		else
+			vim.notify(table.concat(parts, "\n"), vim.log.levels.INFO)
+		end
+	end
 
 	if runner._server_port then
+		pending = pending + 1
 		local url = string.format("http://127.0.0.1:%d/status", runner._server_port)
 		vim.system({ "curl", "-s", url }, { text = true }, function(result)
 			vim.schedule(function()
 				if result.code == 0 and result.stdout then
 					local ok, s = pcall(vim.json.decode, result.stdout)
 					if ok then
-						local ver = s.version and (" v" .. s.version) or ""
+						local info = {}
+						if s.version then
+							table.insert(info, "version: " .. s.version)
+						end
+						if s.root then
+							table.insert(info, "root: " .. s.root)
+						end
+						if s.scope then
+							table.insert(info, "scope: " .. s.scope)
+						end
 						if s.status == "ready" then
-							vim.notify(
-								string.format("vecgrep%s: ready (%d files, %d chunks)", ver, s.files, s.chunks),
-								vim.log.levels.INFO
-							)
+							table.insert(info, string.format("status: ready (%d files, %d chunks)", s.files, s.chunks))
 						else
 							local total = s.total and tostring(s.total) or "??"
-							vim.notify(
-								string.format(
-									"vecgrep%s: indexing %d/%s files, %d chunks",
-									ver,
-									s.indexed,
-									total,
-									s.chunks
-								),
-								vim.log.levels.INFO
+							table.insert(
+								info,
+								string.format("status: indexing %d/%s files, %d chunks", s.indexed, total, s.chunks)
 							)
 						end
+						table.insert(parts, "server:\n  " .. table.concat(info, "\n  "))
 					end
 				end
+				maybe_notify()
 			end)
 		end)
 	end
+
+	runner.run_command({ "--stats" }, function(_, stderr)
+		local output = (stderr or ""):gsub("^%s+", ""):gsub("%s+$", "")
+		if output ~= "" then
+			table.insert(parts, output)
+		end
+		maybe_notify()
+	end)
 end
 
 --- Stop the vecgrep server if running.
