@@ -4,8 +4,8 @@ Neovim plugin for [vecgrep](https://github.com/martintrojer/vecgrep) — semanti
 
 ## Features
 
-- **Static search** — run a query, browse results in snacks.picker (or `vim.ui.select`)
-- **Live search** — interactive snacks.picker backed by a warm vecgrep server (model loaded once, instant queries)
+- **Static search** — run a query, browse results in fzf-lua (or `vim.ui.select`)
+- **Live search** — interactive fzf-lua picker backed by a warm vecgrep server (model loaded once, instant queries)
 - **Preview** — file preview with syntax highlighting and matched chunk region highlighted
 - **Score coloring** — green (high), yellow (medium), red (low) similarity scores
 - **Index management** — reindex, stats, and cache clearing from within Neovim
@@ -14,7 +14,7 @@ Neovim plugin for [vecgrep](https://github.com/martintrojer/vecgrep) — semanti
 
 - [vecgrep](https://github.com/martintrojer/vecgrep) binary on `$PATH` (with `--serve` support)
 - Neovim >= 0.10
-- [snacks.nvim](https://github.com/folke/snacks.nvim) (optional, but needed for live mode and enhanced static mode)
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua) (optional, but needed for live mode and enhanced static mode)
 
 ## Installation
 
@@ -23,7 +23,7 @@ Neovim plugin for [vecgrep](https://github.com/martintrojer/vecgrep) — semanti
 ```lua
 {
   "martintrojer/vecgrep.nvim",
-  dependencies = { "folke/snacks.nvim" },
+  dependencies = { "ibhagwan/fzf-lua" },
   opts = {},
 }
 ```
@@ -57,7 +57,7 @@ The search path is derived automatically from the current buffer's directory. ve
 
 ### How live mode works
 
-`:VecgrepLive` starts a `vecgrep --serve` HTTP server in the background on first invocation. The server loads the embedding model and index once, then stays warm for the session. Each keystroke triggers a query to the server via snacks.picker's proc source — just embedding + search, no model loading overhead. The server is stopped automatically when Neovim exits.
+`:VecgrepLive` starts a `vecgrep --serve` HTTP server in the background on first invocation. The server loads the embedding model and index once, then stays warm for the session. Each keystroke triggers a query to the server via fzf-lua's live picker — just embedding + search, no model loading overhead. The server is stopped automatically when Neovim exits.
 
 ### Lua API
 
@@ -74,7 +74,11 @@ require("vecgrep").stop_server()  -- manually stop the background server
 
 ```lua
 vim.keymap.set("n", "<leader>vs", function()
-  require("vecgrep").search(vim.fn.input("Vecgrep: "))
+  vim.ui.input({ prompt = "Vecgrep: " }, function(input)
+    if input and input ~= "" then
+      require("vecgrep").search(input)
+    end
+  end)
 end, { desc = "Vecgrep search" })
 
 vim.keymap.set("n", "<leader>vl", function()
@@ -84,7 +88,7 @@ end, { desc = "Vecgrep live" })
 
 ## Picker Keybindings
 
-In the snacks.picker:
+In the fzf-lua picker:
 
 | Key | Action |
 |---|---|

@@ -21,8 +21,16 @@ function M.setup(opts)
 		if cmd.bang then
 			search_opts.from_root = not config.options.search_from_root
 		end
-		M.search(cmd.args, search_opts)
-	end, { nargs = 1, bang = true, desc = "Semantic search with vecgrep (! toggles root)" })
+		if cmd.args ~= "" then
+			M.search(cmd.args, search_opts)
+		else
+			vim.ui.input({ prompt = "Vecgrep: " }, function(input)
+				if input and input ~= "" then
+					M.search(input, search_opts)
+				end
+			end)
+		end
+	end, { nargs = "?", bang = true, desc = "Semantic search with vecgrep (! toggles root)" })
 
 	vim.api.nvim_create_user_command("VecgrepLive", function(cmd)
 		local live_opts = {}

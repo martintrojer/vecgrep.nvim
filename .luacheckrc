@@ -1,3 +1,5 @@
 globals = {
 	"vim",
 }
+
+self = false
