@@ -18,11 +18,16 @@ local function url_encode(str)
 end
 
 --- Get the directory of the current buffer (falls back to cwd).
+--- Validates that the resolved path is a real directory (handles special
+--- buffers like ministarter, oil://, fugitive://, etc.).
 ---@return string
 function M.buf_dir()
 	local bufname = vim.api.nvim_buf_get_name(0)
 	if bufname ~= "" then
-		return vim.fn.fnamemodify(bufname, ":p:h")
+		local dir = vim.fn.fnamemodify(bufname, ":p:h")
+		if vim.fn.isdirectory(dir) == 1 then
+			return dir
+		end
 	end
 	return vim.fn.getcwd()
 end
