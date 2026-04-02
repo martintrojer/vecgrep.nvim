@@ -51,7 +51,7 @@ The search path is derived automatically from the current buffer's directory. ve
 |---|---|
 | `:Vecgrep[!] <query>` | Semantic search for `<query>` (`!` toggles root search) |
 | `:VecgrepLive[!]` | Live interactive semantic search (`!` toggles root search) |
-| `:VecgrepReindex [path]` | Force full re-index |
+| `:VecgrepReindex` | Force full re-index |
 | `:VecgrepStats` | Show index statistics (and server status if running) |
 | `:VecgrepClearCache` | Delete cached index |
 
@@ -64,7 +64,7 @@ The search path is derived automatically from the current buffer's directory. ve
 ```lua
 require("vecgrep").search("error handling")
 require("vecgrep").live()
-require("vecgrep").reindex("./src")
+require("vecgrep").reindex()
 require("vecgrep").stats()
 require("vecgrep").clear_cache()
 require("vecgrep").stop_server()  -- manually stop the background server

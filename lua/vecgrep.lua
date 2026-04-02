@@ -40,10 +40,9 @@ function M.setup(opts)
 		M.live(live_opts)
 	end, { bang = true, desc = "Live semantic search with vecgrep (! toggles root)" })
 
-	vim.api.nvim_create_user_command("VecgrepReindex", function(cmd)
-		local path = cmd.args ~= "" and cmd.args or nil
-		M.reindex(path)
-	end, { nargs = "?", desc = "Re-index with vecgrep" })
+	vim.api.nvim_create_user_command("VecgrepReindex", function()
+		M.reindex()
+	end, { desc = "Re-index with vecgrep" })
 
 	vim.api.nvim_create_user_command("VecgrepStats", function()
 		M.stats()
@@ -68,16 +67,14 @@ function M.live(opts)
 end
 
 --- Force a full re-index.
----@param path? string path to re-index (defaults to current buffer's directory)
-function M.reindex(path)
-	path = path or vim.fn.expand("%:p:h")
-	local args = { "--reindex", path }
-	vim.notify("vecgrep: reindexing " .. path .. " ...", vim.log.levels.INFO)
-	runner.run_command(args, function(stdout, stderr, code)
+function M.reindex()
+	vim.notify("vecgrep: reindexing...", vim.log.levels.INFO)
+	runner.run_command({ "--reindex" }, function(_, stderr, code)
 		if code == 0 then
-			vim.notify("vecgrep: reindex complete\n" .. stdout, vim.log.levels.INFO)
+			local output = (stderr or ""):gsub("^%s+", ""):gsub("%s+$", "")
+			vim.notify("vecgrep: reindex complete\n" .. output, vim.log.levels.INFO)
 		else
-			vim.notify("vecgrep: reindex failed\n" .. stderr, vim.log.levels.ERROR)
+			vim.notify("vecgrep: reindex failed\n" .. (stderr or ""), vim.log.levels.ERROR)
 		end
 	end)
 end

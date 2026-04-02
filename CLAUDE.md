@@ -51,7 +51,7 @@ lua/
 |---|---|
 | `:Vecgrep[!] <query>` | Static semantic search (`!` toggles root search) |
 | `:VecgrepLive[!]` | Live interactive semantic search (`!` toggles root search) |
-| `:VecgrepReindex [path]` | Force full re-index |
+| `:VecgrepReindex` | Force full re-index |
 | `:VecgrepStats` | Show index statistics (and server status if running) |
 | `:VecgrepClearCache` | Delete cached index |
 
